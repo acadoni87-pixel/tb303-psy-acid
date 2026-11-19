@@ -1,0 +1,33 @@
+name: Build macOS VST3 & AU
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download JUCE
+        run: git clone --depth 1 https://github.com/juce-framework/JUCE.git JUCE
+
+      - name: Configure CMake (Universal x86_64 + arm64)
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+
+      - name: Build VST3 and AU
+        run: cmake --build build --config Release --target TB303_Psychedelic_Acid_VST3 TB303_Psychedelic_Acid_AU -j
+
+      - name: Package Plugins
+        run: |
+          mkdir -p release_plugins
+          cp -R build/TB303_Psychedelic_Acid_artefacts/Release/VST3/*.vst3 release_plugins/
+          cp -R build/TB303_Psychedelic_Acid_artefacts/Release/AU/*.component release_plugins/
+
+      - name: Upload VST3 & AU Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TB303-Psychedelic-Acid-macOS-VST3-AU
+          path: release_plugins/
